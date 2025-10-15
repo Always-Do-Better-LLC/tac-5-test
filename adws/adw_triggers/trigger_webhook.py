@@ -65,9 +65,48 @@ async def github_webhook(request: Request):
     try:
         # Get event type from header
         event_type = request.headers.get("X-GitHub-Event", "")
-        
-        # Parse webhook payload
-        payload = await request.json()
+
+        print(f"Received webhook: event_type={event_type}")
+
+        # Handle ping events
+        if event_type == "ping":
+            print("Received ping event from GitHub - webhook is configured correctly")
+            return {"status": "ok", "message": "pong"}
+
+        # Get raw body and parse
+        import json
+        from urllib.parse import parse_qs, unquote
+
+        body_bytes = await request.body()
+        print(f"Body length: {len(body_bytes)} bytes")
+
+        if not body_bytes:
+            print("Empty body received")
+            return {"status": "ignored", "reason": "Empty body"}
+
+        try:
+            body_str = body_bytes.decode('utf-8')
+
+            # Check if this is form-encoded (GitHub sends payload=<json>)
+            if body_str.startswith('payload='):
+                print("Detected form-encoded payload")
+                # Parse form data and extract payload
+                form_data = parse_qs(body_str)
+                if 'payload' in form_data:
+                    json_str = form_data['payload'][0]
+                    payload = json.loads(json_str)
+                else:
+                    print("No 'payload' field in form data")
+                    return {"status": "error", "message": "No payload field"}
+            else:
+                # Try parsing as direct JSON
+                payload = json.loads(body_str)
+
+            print(f"Successfully parsed payload")
+        except Exception as json_error:
+            print(f"Failed to parse: {json_error}")
+            print(f"Body preview: {body_str[:200] if len(body_str) < 200 else body_str[:200]}")
+            return {"status": "error", "message": "Invalid payload"}
         
         # Extract event details
         action = payload.get("action", "")
