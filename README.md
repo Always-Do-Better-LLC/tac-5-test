@@ -263,31 +263,5 @@ For detailed technical documentation, configuration options, and troubleshooting
 - Ensure backend is running on port 8000
 - Check vite.config.ts proxy settings
 
-## test mermaid
 
-graph TD
-    A[Data Ingestion API (.NET)] --> B{Message Queue (RabbitMQ/Azure Service Bus)};
-    B --> C[Preprocessing Service (.NET)];
-    C --> D{Orchestration Service (.NET)};
-    D -- Start Training Job --> E[GraphMERT Training Core (Python/Docker)];
-    E -- KG & Model Artifacts --> F[Blob Storage (Azure Blob/S3)];
-    D -- Signal Completion --> G[KG Indexing Service (.NET)];
-    F --> G;
-    G -- Write to --> H[Graph Database (Neo4j)];
-    I[Expert MoE API (.NET)] -- Query --> H;
-    I -- (Optional) Inference --> J[Inference Service (Rust/Python)];
-    J -- Loads Model from --> F;
-
-    subgraph "AI Compute Plane (Python/Rust on GPU-enabled Kubernetes)"
-        E
-        J
-    end
-
-    subgraph "Service & Logic Plane (.NET on Kubernetes/App Service)"
-        A
-        C
-        D
-        G
-        I
-    end
 
